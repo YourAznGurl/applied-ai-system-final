@@ -18,7 +18,7 @@ The original needed a hand-built preference profile. VibeFinder AI lets you desc
 It runs with no API key, so results are reproducible.
 
 ## Architecture Overview
-The source is in `diagrams/architecture.mmd`.
+The diagram source is in `diagrams/architecture.mmd`.
 
 ```mermaid
 flowchart TD
@@ -45,13 +45,30 @@ flowchart TD
 
 A request enters through the command line and is checked by the input guardrail. If accepted, the agent searches two custom documents (a situation guide and a genre guide) with a small TF-IDF retriever. It uses what it finds to turn the request into genre, mood and energy. The preferences are checked against the real catalog, and if genre or mood is still missing the agent searches the songs themselves to fill the gap. The original Module 3 scorer ranks the songs, then an explanation is written and checked by the self-check, which swaps in a safe template if it fails. Every step is logged. Humans are involved through the evaluation script, the automated tests and the reasoning traces in `ai_interactions.md`.
 
+## Project Structure
+```
+src/recommender.py   original Module 3 scorer (unchanged)
+src/llm.py           Gemini client (optional)
+src/rag.py           retriever over songs and knowledge notes
+src/guardrails.py    input validation and explanation self-check
+src/agent.py         the agent loop (plan, tools, self-check, traces)
+src/app.py           command-line app
+src/evaluate.py      evaluation harness
+knowledge/           custom documents used for retrieval
+diagrams/            architecture.mmd (Mermaid source)
+assets/              evaluation reports
+tests/               automated tests
+ai_interactions.md   saved agent reasoning traces
+model_card.md        reflection, limitations, collaboration
+```
+
 ## Setup
 ```bash
 git clone https://github.com/YourAznGurl/applied-ai-system-final.git
 cd applied-ai-system-final
 python3 -m venv .venv
 source .venv/bin/activate
-pip install pytest
+pip install pytest certifi
 ```
 Optional (Gemini mode): create a `.env` file in the project root containing
 ```
@@ -64,10 +81,12 @@ Without a key, everything runs in offline mode. `.env` is git-ignored.
 ```bash
 python -m src.app --offline "calm music to study for my exam tonight"
 python -m src.app --offline --style plain "upbeat happy pop for a road trip"
-python -m src.app                       # interactive mode (uses Gemini if a key is set)
-python -m pytest                        # automated tests
-python -m src.evaluate                  # evaluation harness
-python -m src.evaluate --save-traces    # also append reasoning traces to ai_interactions.md
+python -m src.app "calm music to study for my exam tonight"   # uses Gemini if a key is set
+python -m src.app                                             # interactive mode
+python -m pytest                                              # automated tests
+python -m src.evaluate                                        # evaluation harness (offline)
+python -m src.evaluate --llm                                  # evaluation with Gemini
+python -m src.evaluate --save-traces                          # also append reasoning traces to ai_interactions.md
 ```
 
 ## Sample Interactions
@@ -129,10 +148,47 @@ Top picks:
 Recommended: Sunrise City by Neon Echo; Gym Hero by Max Pulse; Rooftop Lights by Indigo Parade; Night Drive Loop by Neon Echo; Concrete Crown by Kid Atlas. These match genre pop and mood happy with high energy.
 ```
 
+## Gemini Mode (live AI model)
+With a Gemini API key in `.env`, the same agent uses Gemini to extract preferences and write the explanation. Gemini's output still goes through the same guardrails and self-check.
+
+```
+$ python -m src.app "calm music to study for my exam tonight"
+Request: calm music to study for my exam tonight
+Understood as: genre=lofi, mood=focused, energy=0.35
+Confidence: 1.0 | AI mode: Gemini | Scorer: original recommender (src/recommender.py)
+Notes used: mood_guide.md > Studying and focus, genre_guide.md > classical, genre_guide.md > jazz
+
+Top picks:
+  1. Focus Flow by LoRoom (score 3.95)
+  2. Library Rain by Paper Lanterns (score 3.0)
+  3. Midnight Coding by LoRoom (score 2.93)
+  4. Coffee Shop Stories by Slow Stereo (score 0.98)
+  5. Spacewalk Thoughts by Orbit Bloom (score 0.93)
+
+DJ VibeFinder here: time to ace that test! Focus Flow keeps your mind sharp, while Library Rain and Midnight Coding block out distractions. Coffee Shop Stories adds a gentle rhythm, and Spacewalk Thoughts offers deep ambient calm for ultimate focus.
+Next up: pure success
+```
+
+Log lines from that run (`logs/app.log`):
+```
+INFO LLM extract_preferences | {"genre": "lofi", "mood": "focused", "energy": 0.35}
+INFO LLM explain | dj style, 44 words
+INFO SELF-CHECK | passed
+```
+
+### A real failure the guardrails handled
+On my first Gemini run, every API call failed with a macOS certificate error. The agent logged it, fell back to offline rules and still returned a correct answer instead of crashing:
+```
+INFO FALLBACK | LLM extraction failed (Network error: [SSL: CERTIFICATE_VERIFY_FAILED] ...); using rules instead
+INFO FALLBACK | LLM explanation failed (Network error: [SSL: CERTIFICATE_VERIFY_FAILED] ...); using template
+```
+I fixed the cause by using the `certifi` certificate bundle in `src/llm.py`.
+
 ## Reliability and Guardrails
 - **Input validation:** rejects empty, too-long and symbol-only requests and known prompt-injection phrases.
 - **Catalog check:** extracted genre and mood must exist in `songs.csv`, or they are ignored.
 - **Self-check:** the explanation may only mention recommended songs (and, in DJ style, must follow the required format). If it fails, the agent replaces it with a safe template and logs a REVISION step.
+- **Fallbacks:** if Gemini fails, the agent logs the error and continues with offline rules and templates.
 - **Confidence score (heuristic, not calibrated):** 60% from how many of genre, mood and energy were understood, 40% from whether relevant notes were retrieved.
 - **Logging:** every run writes to `logs/app.log`, and reasoning traces go to `ai_interactions.md`.
 
@@ -164,9 +220,19 @@ $ python -m src.evaluate
 SUMMARY: 8/8 tests passed
 Average confidence on valid requests: 0.80
 ```
-The 8 evaluation cases cover four normal requests (study, workout, sad rainy day, road trip), an empty input, a prompt injection, an over-length input and gibberish. The full report is in `assets/eval_results.txt`.
+The 8 evaluation cases cover four normal requests (study, workout, sad rainy day, road trip), an empty input, a prompt injection, an over-length input and gibberish. The full offline report is in `assets/eval_results.txt`.
 
-**What worked:** the guardrails, the retrieval, and the self-check all behaved as designed. **What I learned:** my first version of the knowledge notes did not match my real catalog (it assumed fewer genres), so I rewrote them after listing the genres and moods in `songs.csv`. The tests only checked what the catalog could actually satisfy.
+### Gemini evaluation
+```
+$ python -m src.evaluate --llm
+SUMMARY: 7/8 tests passed
+Average confidence on valid requests: 0.84
+[FAIL] sad rainy day: genre=folk, mood=sad, energy=0.30
+       - mood was sad, expected moody
+```
+The full Gemini report is in `assets/eval_results_gemini.txt`. The one failure is an ambiguous request: it contains both "sad" and "moody", and my catalog has both moods. Gemini chose "sad", my test expected "moody". I kept the test as is and documented it in `model_card.md`.
+
+**What worked:** the guardrails, the retrieval and the self-check all behaved as designed, and the offline mode is fully repeatable. **What I learned:** my first version of the knowledge notes did not match my real catalog (it assumed fewer genres), so I rewrote them after listing the genres and moods in `songs.csv`. Tests for AI output on ambiguous input are brittle, which is why the offline mode is the repeatable baseline.
 
 ## Stretch Features
 
@@ -191,30 +257,37 @@ RAG BEFORE / AFTER (offline rules, same requests)
 **Impact (honest summary):** the notes changed the extracted mood and energy and raised confidence in every case (0.0 to 0.4 before, 1.0 after). The top song only changed for the study request (Midnight Coding became Focus Flow, a better fit for "focused"). In the other three cases the top song was the same, because the catalog is small and the song-search repair step already found the right genre. So retrieval improved precision and confidence more than it changed the winners.
 
 ### Agentic Workflow Enhancement
-The agent runs a multi-step chain with three tool calls (`search_knowledge`, `search_songs`, `recommend_songs`), a decision step (fill missing fields or fall back to defaults) and a self-check with a revision step. Every step is saved in **`ai_interactions.md`**.
+The agent runs a multi-step chain with three tool calls (`search_knowledge`, `search_songs`, `recommend_songs`), a decision step (fill missing fields or fall back to defaults) and a self-check with a revision step. Every step is saved in **`ai_interactions.md`**, including the runs where Gemini failed and the agent fell back.
 
 ### Specialization (DJ style vs baseline)
+Offline mode (templates):
 ```
-STYLE COMPARISON: baseline (plain) vs specialized (dj)
 style    avg words  titles mentioned   format ok
 plain         36.0             100%        0/5
 dj            27.0             100%        5/5
 ```
-The DJ style is constrained to start with "DJ VibeFinder here:", stay short and end with "Next up:". The measured differences are explanation length and format compliance. In offline mode these are template-based, so the table shows the specialization contract more than creative model behavior (see `model_card.md`).
+Gemini mode:
+```
+style    avg words  titles mentioned   format ok
+plain         48.2              84%        0/5
+dj            26.8             100%        5/5
+```
+The DJ style is constrained by a system prompt with an example: it must start with "DJ VibeFinder here:", stay short, mention every recommended song and end with "Next up:". With Gemini, the specialized style was measurably shorter, mentioned every recommended title (the plain style mentioned only 84%), and followed the format 5 out of 5 times. This is one run on 5 requests, so it is a small sample. The comparison is also in `model_card.md`.
 
 ### Test Harness
-`python -m src.evaluate` runs 8 predefined inputs, prints PASS/FAIL per case, a summary and the average confidence, and writes `assets/eval_results.txt`.
+`python -m src.evaluate` runs 8 predefined inputs, prints PASS/FAIL per case, a summary and the average confidence, and writes `assets/eval_results.txt`. With `--llm` it runs the same cases against Gemini.
 
 ## Design Decisions
 - **Offline mode plus optional Gemini:** the project runs for anyone and tests repeat exactly. The trade-off is that offline mode uses templates and keyword rules, so it is less flexible than a language model.
 - **Kept my original recommender as the scoring engine:** the AI handles understanding and explaining, not ranking, so the ranking logic stays transparent and testable.
 - **Simple keyword (TF-IDF) retrieval instead of a vector database:** easier to explain and debug at this size, but it misses synonyms.
-- **Standard-library Gemini client (no extra installs):** fewer setup problems, but fewer features than the official SDK.
+- **Standard-library Gemini client (no SDK):** fewer setup problems and fewer dependencies, but fewer features than the official SDK.
+- **Self-check with a safe template fallback:** a bad AI explanation is replaced instead of shown, at the cost of a plainer answer.
 
 ## Reflection
-Adding AI around a working program taught me that the hardest part is knowing when the AI is wrong. The self-check, the confidence score and the catalog check each caught a different kind of problem, and the evaluation script made those problems visible. Reading my own before/after results also taught me to describe improvements honestly: retrieval made the system more precise and more confident, but it did not change every answer. The graded reflection is in `model_card.md`.
+Adding AI around a working program taught me that the hardest part is knowing when the AI is wrong. The self-check, the confidence score and the catalog check each caught a different kind of problem, and the evaluation script made those problems visible. My first Gemini run also taught me not to trust a status label: the screen said "Gemini" while every call was failing, and I only found out by reading the log. The graded reflection is in `model_card.md`.
 
 ## Portfolio
 - GitHub: https://github.com/YourAznGurl/applied-ai-system-final
 - Loom walkthrough (optional): [ADD LINK IF YOU RECORD ONE]
-- What this project says about me as an AI engineer: [WRITE 2 SENTENCES IN YOUR OWN WORDS, for example how you approach building, testing and honestly evaluating an AI feature.]
+- **What this project says about me as an AI engineer:** I build AI features around things I can test, and I check results instead of trusting them. I measure what an AI component actually changes, document what went wrong, and design the system so it fails safely.
