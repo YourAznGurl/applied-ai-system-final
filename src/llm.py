@@ -1,9 +1,17 @@
-"""Tiny Gemini client. Uses only built-in Python, so nothing extra to install."""
+"""Tiny Gemini client. Uses built-in Python plus certifi for secure connections."""
 import json
 import os
+import ssl
 import urllib.error
 import urllib.request
 from pathlib import Path
+
+# certifi supplies trusted website certificates (fixes CERTIFICATE_VERIFY_FAILED on macOS)
+try:
+    import certifi
+    SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    SSL_CONTEXT = ssl.create_default_context()
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -49,7 +57,7 @@ def ask_llm(prompt, system=None, timeout=30):
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(request, timeout=timeout, context=SSL_CONTEXT) as response:
             data = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as err:
         raise RuntimeError(f"Gemini HTTP {err.code}: {err.read().decode('utf-8')[:200]}") from err

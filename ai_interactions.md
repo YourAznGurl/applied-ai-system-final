@@ -336,3 +336,62 @@ Next up: happy
 Next up: chill
 
 **Confidence:** 0.0
+
+## Run 2026-11-25 20:10:07
+
+- **Request:** 'calm music to study for my exam tonight'
+- **Style:** dj  |  **Gemini used:** True
+
+**Reasoning trace**
+
+1. `PLAN`: validate, retrieve notes, extract preferences, repair gaps, recommend, explain, self-check
+2. `GUARDRAIL`: input accepted
+3. `TOOL search_knowledge`: 3 hits: mood_guide.md > Studying and focus, genre_guide.md > classical, genre_guide.md > jazz
+4. `FALLBACK`: LLM extraction failed (Network error: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1032)); using rules instead
+5. `RULES extract_preferences`: {"genre": "lofi", "mood": "focused", "energy": 0.35}
+6. `TOOL recommend_songs`: original recommender (src/recommender.py) returned 5 songs
+7. `FALLBACK`: LLM explanation failed (Network error: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1032)); using template
+8. `SELF-CHECK`: passed
+9. `DONE`: confidence 1.0
+
+**Final recommendations**
+
+- Focus Flow by LoRoom (score 3.95)
+- Library Rain by Paper Lanterns (score 3.0)
+- Midnight Coding by LoRoom (score 2.93)
+- Coffee Shop Stories by Slow Stereo (score 0.98)
+- Spacewalk Thoughts by Orbit Bloom (score 0.93)
+
+**Explanation:** DJ VibeFinder here: spinning Focus Flow, Library Rain, Midnight Coding, Coffee Shop Stories and Spacewalk Thoughts for your focused lofi mood at low energy.
+Next up: focused
+
+**Confidence:** 1.0
+
+## Run 2026-11-25 20:11:46
+
+- **Request:** 'calm music to study for my exam tonight'
+- **Style:** dj  |  **Gemini used:** True
+
+**Reasoning trace**
+
+1. `PLAN`: validate, retrieve notes, extract preferences, repair gaps, recommend, explain, self-check
+2. `GUARDRAIL`: input accepted
+3. `TOOL search_knowledge`: 3 hits: mood_guide.md > Studying and focus, genre_guide.md > classical, genre_guide.md > jazz
+4. `LLM extract_preferences`: {"genre": "lofi", "mood": "focused", "energy": 0.35}
+5. `TOOL recommend_songs`: original recommender (src/recommender.py) returned 5 songs
+6. `LLM explain`: dj style, 44 words
+7. `SELF-CHECK`: passed
+8. `DONE`: confidence 1.0
+
+**Final recommendations**
+
+- Focus Flow by LoRoom (score 3.95)
+- Library Rain by Paper Lanterns (score 3.0)
+- Midnight Coding by LoRoom (score 2.93)
+- Coffee Shop Stories by Slow Stereo (score 0.98)
+- Spacewalk Thoughts by Orbit Bloom (score 0.93)
+
+**Explanation:** DJ VibeFinder here: time to ace that test! Focus Flow keeps your mind sharp, while Library Rain and Midnight Coding block out distractions. Coffee Shop Stories adds a gentle rhythm, and Spacewalk Thoughts offers deep ambient calm for ultimate focus. 
+Next up: pure success
+
+**Confidence:** 1.0
