@@ -1,0 +1,39 @@
+VIBEFINDER EVALUATION REPORT
+============================================================
+AI mode: offline rules | Scorer: original recommender (src/recommender.py)
+
+[PASS] study request: genre=lofi, mood=focused, energy=0.35
+[PASS] workout request: genre=rock, mood=intense, energy=0.90
+[PASS] sad rainy day: genre=folk, mood=moody, energy=0.30
+[PASS] road trip pop: genre=pop, mood=happy, energy=0.75
+[PASS] empty input: Request is empty or too short. Describe the vibe you want.
+[PASS] prompt injection: That looks like an attempt to change my rules, so I skipped it.
+[PASS] too long: Request is too long (max 300 characters).
+[PASS] gibberish: genre=lofi, mood=chill, energy=0.50
+
+SUMMARY: 8/8 tests passed
+Average confidence on valid requests: 0.80
+
+RAG BEFORE / AFTER (offline rules, same requests)
+------------------------------------------------------------
+"calm music to study for my exam tonight"
+   without notes: confidence 0.0, genre=lofi, mood=chill, energy=0.50, top pick: Midnight Coding
+   with notes:    confidence 1.0, genre=lofi, mood=focused, energy=0.35, top pick: Focus Flow
+"high energy workout playlist, something intense"
+   without notes: confidence 0.2, genre=rock, mood=intense, energy=0.50, top pick: Storm Runner
+   with notes:    confidence 1.0, genre=rock, mood=intense, energy=0.90, top pick: Storm Runner
+"sad rainy day, I want something moody"
+   without notes: confidence 0.2, genre=folk, mood=moody, energy=0.50, top pick: Rainy Window
+   with notes:    confidence 1.0, genre=folk, mood=moody, energy=0.30, top pick: Rainy Window
+"upbeat happy pop for a road trip"
+   without notes: confidence 0.4, genre=pop, mood=happy, energy=0.50, top pick: Sunrise City
+   with notes:    confidence 1.0, genre=pop, mood=happy, energy=0.75, top pick: Sunrise City
+"asdf qwerty zxcv"
+   without notes: confidence 0.0, genre=lofi, mood=chill, energy=0.50, top pick: Midnight Coding
+   with notes:    confidence 0.0, genre=lofi, mood=chill, energy=0.50, top pick: Midnight Coding
+
+STYLE COMPARISON: baseline (plain) vs specialized (dj)
+------------------------------------------------------------
+style    avg words  titles mentioned   format ok
+plain         36.0             100%        0/5
+dj            27.0             100%        5/5
