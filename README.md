@@ -1,5 +1,7 @@
 # VibeFinder AI: Applied AI Music Recommender
 
+**Author:** Ena Tarumi | **Z-number:** Z23664744 | Florida Atlantic University, Project 4: Applied AI System
+
 ## Base Project
 This extends my **Module 3 "Show What You Know" project, the Music Recommender Simulation**. The original was a content-based recommender: it loaded 18 songs from `data/songs.csv`, scored each song against a user's preferred genre, mood and energy using weighted rules (genre match +2.0, mood match +1.0, energy closeness up to +1.0), and returned the top 5 matches with an explanation of each score.
 
@@ -288,5 +290,6 @@ The DJ style is constrained by a system prompt with an example: it must start wi
 Adding AI around a working program taught me that the hardest part is knowing when the AI is wrong. The self-check, the confidence score and the catalog check each caught a different kind of problem, and the evaluation script made those problems visible. My first Gemini run also taught me not to trust a status label: the screen said "Gemini" while every call was failing, and I only found out by reading the log. The graded reflection is in `model_card.md`.
 
 ## Portfolio
+- **Name:** Ena Tarumi (Z23664744)
 - GitHub: https://github.com/YourAznGurl/applied-ai-system-final
 - **What this project says about me as an AI engineer:** I build AI features around things I can test, and I check results instead of trusting them. I measure what an AI component actually changes, document what went wrong, and design the system so it fails safely.
