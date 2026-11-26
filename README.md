@@ -289,5 +289,4 @@ Adding AI around a working program taught me that the hardest part is knowing wh
 
 ## Portfolio
 - GitHub: https://github.com/YourAznGurl/applied-ai-system-final
-- Loom walkthrough (optional): [ADD LINK IF YOU RECORD ONE]
 - **What this project says about me as an AI engineer:** I build AI features around things I can test, and I check results instead of trusting them. I measure what an AI component actually changes, document what went wrong, and design the system so it fails safely.
