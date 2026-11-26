@@ -1,3 +1,6 @@
+# Secrets (API key lives here, never upload it)
+.env
+
 # Byte compiled
 __pycache__/
 *.py[cod]
@@ -13,3 +16,6 @@ venv/
 
 # Pytest cache
 .pytest_cache/
+
+# Logs
+logs/

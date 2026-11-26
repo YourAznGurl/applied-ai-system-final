@@ -1,0 +1,20 @@
+flowchart TD
+    U["User request (CLI: python -m src.app)"] --> G1{"Input guardrail: validate_request"}
+    G1 -- "rejected" --> R1["Safe message returned and logged"]
+    G1 -- "accepted" --> P["Agent PLAN step"]
+    P --> T1["Tool 1: search_knowledge (RAG)"]
+    KN[("knowledge/mood_guide.md and genre_guide.md")] --> T1
+    T1 --> E{"Extract preferences: Gemini if key set, else rules"}
+    E --> C["Clean preferences against the real catalog (guardrail)"]
+    C --> D{"Genre or mood missing?"}
+    D -- "yes" --> T2["Tool 2: search_songs (repair step)"]
+    SC[("data/songs.csv")] --> T2
+    D -- "no" --> T3
+    T2 --> T3["Tool 3: recommend_songs (original Module 3 scorer)"]
+    T3 --> X["Explain: DJ style or plain style (Gemini or template)"]
+    X --> S{"Self-check: titles and format"}
+    S -- "fail" --> RV["Revise: safe template explanation"]
+    S -- "pass" --> O
+    RV --> O["Output: top picks, explanation, confidence score"]
+    O --> L["Logs: logs/app.log and ai_interactions.md"]
+    O --> H["Human review plus python -m src.evaluate and pytest"]
