@@ -1,5 +1,7 @@
 # Model Card: VibeFinder AI
 
+**Author:** Ena Tarumi | **Z-number:** Z23664744 | Florida Atlantic University, Project 4: Applied AI System
+
 ## Overview
 VibeFinder AI is an extension of my Module 3 Music Recommender. It lets a person describe a listening situation in plain English, retrieves notes from custom documents, converts the request into genre, mood and energy (using Gemini when a key is available, or offline rules otherwise), ranks songs with my original scorer, and explains the picks in a checked, specialized style. It is a learning project with an 18-song catalog, not a production recommender.
 
